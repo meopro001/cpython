@@ -1,0 +1,38 @@
+name: Build Python 3.10 for Windows
+
+on:
+  workflow_dispatch:  # Cho phép bạn chạy thủ công
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - name: Checkout CPython source
+      uses: actions/checkout@v3
+
+    - name: Set up MSVC environment
+      uses: ilammy/msvc-dev-cmd@v1
+
+    - name: Install tools
+      run: |
+        choco install nasm python3 -y
+
+    - name: Update submodules
+      run: git submodule update --init --recursive
+
+    - name: Build Python 3.10
+      run: PCbuild\build.bat -e -p x64
+
+    - name: Package
+      run: |
+        mkdir build-output
+        copy PCbuild\amd64\python.exe build-output\
+        copy PCbuild\amd64\*.dll build-output\
+        powershell Compress-Archive -Path build-output\* -DestinationPath python310-build.zip
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: python310-build
+        path: python310-build.zip
